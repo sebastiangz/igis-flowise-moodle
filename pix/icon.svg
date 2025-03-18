@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Earth background -->
+  <circle cx="50" cy="50" r="40" fill="#B4E8B1" stroke="#B4E8B1" stroke-width="2"/>
+  
+  <!-- Meridian lines -->
+  <path d="M10 50 A40 40 0 0 0 90 50" fill="none" stroke="#7BC774" stroke-width="2" opacity="0.8"/>
+  <path d="M15 30 A40 40 0 0 0 85 30" fill="none" stroke="#7BC774" stroke-width="2" opacity="0.8"/>
+  <path d="M20 70 A40 40 0 0 0 80 70" fill="none" stroke="#7BC774" stroke-width="2" opacity="0.8"/>
+  
+  <!-- IGIS text -->
+  <g transform="translate(43, 55)">
+    <text font-family="serif" font-size="28" font-weight="bold" fill="#5E8C5E">
+      <tspan x="0" y="0">g</tspan>
+      <tspan x="14" y="0">i</tspan>
+      <tspan x="20" y="0">s</tspan>
+    </text>
+    <text font-family="serif" font-size="28" font-weight="bold" fill="#7E4F4F">
+      <tspan x="-30" y="0">i</tspan>
+    </text>
+  </g>
+</svg>

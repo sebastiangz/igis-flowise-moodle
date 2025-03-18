@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/igisflowise/db" VERSION="20250318" COMMENT="XMLDB file for Moodle local/igisflowise"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_igisflowise_convs" COMMENT="Stores chat conversations">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="User ID if logged in"/>
+        <FIELD NAME="sessionid" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false" COMMENT="Unique session identifier"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="Conversation status"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Time when conversation started"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Time when conversation ended or updated"/>
+        <FIELD NAME="metadata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Additional metadata in JSON format"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionid" UNIQUE="false" FIELDS="sessionid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_igisflowise_messages" COMMENT="Stores chat messages">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="conversationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID of the conversation"/>
+        <FIELD NAME="message" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Message content"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Message type (user or bot)"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Time when message was sent"/>
+        <FIELD NAME="metadata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Additional metadata in JSON format"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="conversationid" TYPE="foreign" FIELDS="conversationid" REFTABLE="local_igisflowise_convs" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_igisflowise_analytics" COMMENT="Stores chat analytics events">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="eventtype" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Type of analytics event"/>
+        <FIELD NAME="eventdata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Event data in JSON format"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Time when event occurred"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="eventtype" UNIQUE="false" FIELDS="eventtype"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
