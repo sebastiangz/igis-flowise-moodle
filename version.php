@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->version   = 2025031800;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2023042400;        // Requires Moodle 4.6 or later
+$plugin->requires  = 2022112800;        // Requiere Moodle 4.1+ (ajustado para 4.4.6)
 $plugin->component = 'block_flowise_bot'; // Full name of the plugin
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = '1.0.0';

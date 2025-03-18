@@ -18,7 +18,9 @@
  * Block flowise_bot
  *
  * @package    block_flowise_bot
- * @copyright  2025 Your Name
+ * @copyright  2025 [Tu nombre/organización]
+ * @author     [Tu nombre]
+ * @contact    [Tu email o información de contacto]
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -82,7 +84,7 @@ class block_flowise_bot extends block_base {
      * @return object $this->content
      */
     public function get_content() {
-        global $CFG, $PAGE;
+        global $CFG, $PAGE, $USER;
 
         if ($this->content !== null) {
             return $this->content;
@@ -154,7 +156,7 @@ class block_flowise_bot extends block_base {
             'sessionId' => $this->generate_session_id(),
             'contextId' => $PAGE->context->id,
             'courseId' => $PAGE->course->id,
-            'userId' => $PAGE->user->id
+            'userId' => isloggedin() ? $USER->id : 0  // Corregido: usar $USER en lugar de $PAGE->user
         ));
 
         // Custom CSS

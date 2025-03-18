@@ -4,7 +4,7 @@ Este bloque integra un chatbot impulsado por Flowise en tu plataforma Moodle par
 
 ## Requisitos
 
-- Moodle 4.6 o superior
+- Moodle 4.1 o superior (Probado específicamente en Moodle 4.4.6)
 - Un servidor Flowise configurado y en funcionamiento
 - Un chatflow configurado en Flowise
 
