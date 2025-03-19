@@ -36,7 +36,7 @@ function xmldb_local_igisflowise_install() {
     $config = new stdClass();
     $config->enabled = 1;
     $config->chatflow_id = '';
-    $config->api_host = '';
+    $config->api_host = 'https://bot.infraestructuragis.com';
     $config->button_color = '#3B81F6';
     $config->button_position_right = 20;
     $config->button_position_bottom = 20;
@@ -58,7 +58,7 @@ function xmldb_local_igisflowise_install() {
     $config->user_message_bg_color = '#3B81F6';
     $config->user_message_text_color = '#FFFFFF';
     $config->user_avatar_enabled = 1;
-    $config->user_avatar_src = '';
+    $config->user_avatar_src = 'https://www.infraestructuragis.com/wp-content/uploads/2024/07/chatbot-internet-bot-bojangles-roadhouse-blues-robot-github-robot.jpg';
     $config->input_placeholder = get_string('default_input_placeholder', 'local_igisflowise');
     $config->input_bg_color = '#FFFFFF';
     $config->input_text_color = '#303235';

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Settings for the IGIS Flowise Bot plugin
+ * Plugin settings and presets.
  *
  * @package    local_igisflowise
  * @copyright  2025 InfraestructuraGIS (https://www.infraestructuragis.com/)
@@ -24,9 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($hassiteconfig) {
-    require_once($CFG->dirroot . '/local/igisflowise/lib.php');
+require_once($CFG->dirroot . '/local/igisflowise/lib.php');
 
+if ($hassiteconfig) {
     // Create settings page
     $settings = new admin_settingpage('local_igisflowise', get_string('pluginname', 'local_igisflowise'));
     $ADMIN->add('localplugins', $settings);
@@ -400,7 +400,4 @@ if ($hassiteconfig) {
         get_string('save_conversations', 'local_igisflowise'),
         get_string('save_conversations_desc', 'local_igisflowise'),
         0));
-    
-    // Include extended settings (analytics link will be added here if needed)
-    require_once($CFG->dirroot . '/local/igisflowise/settings_extended.php');
 }

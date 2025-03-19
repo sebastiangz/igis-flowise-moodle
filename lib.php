@@ -25,29 +25,37 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Adds IGIS Flowise Bot to the page footer.
+ * Function to add the bot to Moodle's footer.
+ * This is called automatically by Moodle's output system.
  *
- * @param stdClass $footer The footer object.
- * @return string HTML for the footer.
+ * @return string HTML for the bot
  */
-function local_igisflowise_extend_footer(stdClass $footer) {
+function local_igisflowise_before_footer() {
     global $PAGE, $DB, $USER, $COURSE;
 
     // Get the plugin configuration
     $config = get_config('local_igisflowise');
+
+    // Check if the bot is enabled
+    if (empty($config->enabled) || $config->enabled == 0) {
+        return '';
+    }
 
     // Check if the bot should be displayed on this page
     if (!local_igisflowise_should_display_bot($config)) {
         return '';
     }
 
-    // Initialize output buffer
-    $output = '';
-
     // Include the chatbot script
-    $output .= local_igisflowise_render_bot($config);
+    return local_igisflowise_render_bot($config);
+}
 
-    return $output;
+/**
+ * Hook for extend_navigation. This doesn't need to do anything but
+ * is required to make Moodle recognize our before_footer function.
+ */
+function local_igisflowise_extend_navigation(global_navigation $navigation) {
+    // We don't need to do anything here
 }
 
 /**
@@ -58,11 +66,6 @@ function local_igisflowise_extend_footer(stdClass $footer) {
  */
 function local_igisflowise_should_display_bot($config) {
     global $PAGE, $COURSE, $USER;
-
-    // If the bot is disabled globally, don't display
-    if (empty($config->enabled) || $config->enabled == 0) {
-        return false;
-    }
 
     // Check mobile display settings
     if (!empty($config->hide_on_mobile) && $config->hide_on_mobile == 1) {
@@ -82,13 +85,15 @@ function local_igisflowise_should_display_bot($config) {
 
     // Check user roles if specified
     if (!empty($config->show_for_roles)) {
+        $show_for_roles = is_array($config->show_for_roles) ? $config->show_for_roles : explode(',', $config->show_for_roles);
+        
         if (isloggedin() && !is_siteadmin()) {
-            $userroles = get_user_roles_in_context(context_course::instance($COURSE->id));
-            $allowed_roles = explode(',', $config->show_for_roles);
+            $context = context_course::instance($COURSE->id);
+            $userroles = get_user_roles($context);
             $has_required_role = false;
             
             foreach ($userroles as $role) {
-                if (in_array($role->shortname, $allowed_roles)) {
+                if (in_array($role->shortname, $show_for_roles)) {
                     $has_required_role = true;
                     break;
                 }
@@ -103,7 +108,7 @@ function local_igisflowise_should_display_bot($config) {
     // Check display pages settings
     $current_page = $PAGE->pagetype;
     if (!empty($config->display_pages)) {
-        $display_pages = explode(',', $config->display_pages);
+        $display_pages = is_array($config->display_pages) ? $config->display_pages : explode(',', $config->display_pages);
         
         // If 'all' is selected, display on all pages
         if (in_array('all', $display_pages)) {
@@ -123,8 +128,16 @@ function local_igisflowise_should_display_bot($config) {
             return true; // Course pages
         }
         
-        if (in_array('mod-page', $display_pages) && strpos($current_page, 'mod-page') === 0) {
+        if (in_array('mod-page', $display_pages) && strpos($current_page, 'mod-') === 0) {
             return true; // Module pages
+        }
+        
+        if (in_array('user-profile', $display_pages) && strpos($current_page, 'user-profile') === 0) {
+            return true; // User profile pages
+        }
+        
+        if (in_array('login-index', $display_pages) && $current_page == 'login-index') {
+            return true; // Login page
         }
         
         return false;
@@ -141,11 +154,14 @@ function local_igisflowise_should_display_bot($config) {
  * @return string HTML and JavaScript code to render the bot.
  */
 function local_igisflowise_render_bot($config) {
-    global $USER, $DB, $CFG;
+    global $USER, $DB, $CFG, $PAGE;
 
     // Check for required configuration
     if (empty($config->chatflow_id) || empty($config->api_host)) {
-        return '<!-- IGIS Flowise Bot: Incomplete configuration. Please set chatflow_id and api_host -->';
+        if (!empty($config->debug_mode) && $config->debug_mode == 1) {
+            return '<!-- IGIS Flowise Bot: Incomplete configuration. Please set chatflow_id and api_host -->';
+        }
+        return '';
     }
 
     // Prepare starter prompts if defined
@@ -203,7 +219,12 @@ function local_igisflowise_render_bot($config) {
                 'textColor' => $config->tooltip_text_color,
                 'fontSize' => intval($config->tooltip_font_size)
             )
-        )
+        ),
+        // Añadimos información para los manejadores de eventos
+        'saveConversations' => !empty($config->save_conversations) && $config->save_conversations == 1,
+        'wwwroot' => $CFG->wwwroot,
+        'sesskey' => sesskey(),
+        'debugMode' => !empty($config->debug_mode) && $config->debug_mode == 1
     );
 
     // Add autoWindowOpen if enabled
@@ -270,132 +291,25 @@ function local_igisflowise_render_bot($config) {
         }
     }
 
-    // Generate conversation tracking script if enabled
-    $tracking_script = '';
-    if (!empty($config->save_conversations) && $config->save_conversations == 1) {
-        $tracking_script = "
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Generate or retrieve session ID
-            let sessionId = localStorage.getItem('igis_bot_session_id');
-            if (!sessionId) {
-                sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                localStorage.setItem('igis_bot_session_id', sessionId);
-            }
-            
-            let conversationId = null;
-            
-            // Log conversation start when chatbot opens
-            document.addEventListener('flowise:chatOpen', function() {
-                fetch('" . $CFG->wwwroot . "/local/igisflowise/ajax.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        'action': 'log_conversation',
-                        'sesskey': '" . sesskey() . "',
-                        'session_id': sessionId,
-                        'status': 'active'
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        conversationId = data.conversation_id;
-                    }
-                });
-            });
-            
-            // Log user messages
-            document.addEventListener('flowise:messageSubmitted', function(e) {
-                if (!conversationId) return;
-                
-                fetch('" . $CFG->wwwroot . "/local/igisflowise/ajax.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        'action': 'log_message',
-                        'sesskey': '" . sesskey() . "',
-                        'conversation_id': conversationId,
-                        'message': e.detail.message,
-                        'type': 'user'
-                    })
-                });
-            });
-            
-            // Log bot responses
-            document.addEventListener('flowise:messageReceived', function(e) {
-                if (!conversationId) return;
-                
-                fetch('" . $CFG->wwwroot . "/local/igisflowise/ajax.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        'action': 'log_message',
-                        'sesskey': '" . sesskey() . "',
-                        'conversation_id': conversationId,
-                        'message': e.detail.message,
-                        'type': 'bot'
-                    })
-                });
-            });
-            
-            // Update conversation status on close
-            document.addEventListener('flowise:chatClose', function() {
-                if (!conversationId) return;
-                
-                fetch('" . $CFG->wwwroot . "/local/igisflowise/ajax.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        'action': 'log_conversation',
-                        'sesskey': '" . sesskey() . "',
-                        'session_id': sessionId,
-                        'status': 'completed'
-                    })
-                });
-            });
-        });
-        </script>
-        ";
-    }
-
-    // Assemble the output
-    $output = "
-    <script type=\"module\">
-        import Chatbot from \"https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js\"
-        Chatbot.init(" . json_encode($bot_config) . ");
-        
-        " . (!empty($config->debug_mode) && $config->debug_mode == 1 ? "
-        console.log('IGIS Flowise Bot Debug Mode:', {
-            options: " . json_encode($config) . "
-        });
-        " : "") . "
-    </script>
+    // El ID único para este chatbot en la página
+    $bot_id = 'igis-flowise-bot-' . uniqid();
     
-    " . $tracking_script . "
-
-    " . (!empty($config->custom_css) ? "
-    <style type=\"text/css\">
-        " . $config->custom_css . "
-    </style>
-    " : "") . "
-
-    " . (!empty($config->custom_js) ? "
-    <script type=\"text/javascript\">
-        " . $config->custom_js . "
-    </script>
-    " : "") . "
-    ";
-
-    return $output;
+    // Agrega CSS personalizado si está configurado
+    $custom_css = '';
+    if (!empty($config->custom_css)) {
+        $custom_css = '<style type="text/css">' . $config->custom_css . '</style>';
+    }
+    
+    // Cargar el módulo JavaScript del bot utilizando el sistema AMD de Moodle
+    $PAGE->requires->js_call_amd('local_igisflowise/bot_launcher', 'init', array($bot_config));
+    
+    // Si hay JavaScript personalizado, agregarlo también
+    if (!empty($config->custom_js)) {
+        $PAGE->requires->js_init_code($config->custom_js);
+    }
+    
+    // Retorna el contenedor para el bot y cualquier CSS personalizado
+    return '<div id="' . $bot_id . '" class="igis-flowise-bot-container"></div>' . $custom_css;
 }
 
 /**
